@@ -1,5 +1,5 @@
 # kin-class-decoder
-类解密agent逻辑抽象, 只需要简单几步即可实现对Application jar包进行加密.
+类解密agent逻辑抽象, 只需要简单几步即可实现对Application jar包进行解密.
 
 ## 模块说明
 * `kin-class-decoder-agent`, 解密流程抽象, 自定义agent时, 需要依赖该模块, 详细请看该module下的README.md
