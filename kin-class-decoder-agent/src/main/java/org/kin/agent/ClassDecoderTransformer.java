@@ -14,6 +14,7 @@ import java.util.*;
 public final class ClassDecoderTransformer implements ClassFileTransformer {
     /** 单例 */
     private static final ClassDecoderTransformer INSTANCE = new ClassDecoderTransformer();
+
     public static ClassDecoderTransformer instance(){
         return INSTANCE;
     }
@@ -48,23 +49,25 @@ public final class ClassDecoderTransformer implements ClassFileTransformer {
                             byte[] classfileBuffer) throws IllegalClassFormatException {
         //转换成标准类命名
         String standardClassName = className.replaceAll("/", "\\.");
+
+        //检查类名是否匹配, 是否需要解密
+        boolean needDecrypt = false;
+        for (ClassNameMatcher matcher : matchers) {
+            if (matcher.match(standardClassName)) {
+                //只要有一个匹配即表示该类需要解密
+                needDecrypt = true;
+                break;
+            }
+        }
+        if(needDecrypt){
+            //不匹配
+            return classfileBuffer;
+        }
+
         //如果agent jar包中存在该类解密后的class文件内容, 则返回
-        byte[] classBytes = Environment.getExtClassBytes(standardClassName);
+        byte[] classBytes = Environment.getRealClassBytes(standardClassName);
         if (Objects.isNull(classBytes)) {
             //agent jar包中没有该类解密后的class文件内容
-            //检查类名是否匹配, 是否需要解密
-            boolean matchResult = true;
-            for (ClassNameMatcher matcher : matchers) {
-                if (!matcher.match(standardClassName)) {
-                    matchResult = false;
-                    break;
-                }
-            }
-            if(!matchResult){
-                //不匹配
-                return classfileBuffer;
-            }
-
             try {
                 //解密
                 classBytes = Environment.getClassDecoder().decode(classfileBuffer);

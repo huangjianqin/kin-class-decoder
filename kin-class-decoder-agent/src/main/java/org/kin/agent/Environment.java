@@ -33,60 +33,58 @@ public final class Environment {
      * 重写的逻辑注释要加载class文件内容那块, 可以调用Environment.getClassDecoder().decode(classfileBuffer)来解密
      * 注意, 这里面的内容也是使用{@link ClassDecoder}实现类来解密的, 而不是{@link ClassDecoderDecoder}
      */
-    public static final String EXT_DIR = "META-INF/classDecoderExt/";
-    /** class文件后缀定义 */
-    public static final String CLASS_SUFFIX = "class";
+    public static final String ENCRYPTED_CLASSES_DIR = "META-INF/encryptedClasses/";
     /** {@link ClassDecoder}实现类 */
     public static ClassDecoder classDecoder;
     /** key -> 其他需要解密的class类名, value -> {@link ClassDecoder}解密后的class文件内容 */
-    private static final Map<String, byte[]> EXT_CLASS_BUFFER_MAP = new HashMap<>();
+    private static final Map<String, byte[]> REAL_CLASS_BYTES_MAP = new HashMap<>();
 
     @SuppressWarnings("unchecked")
     public static void init() {
         ClassDecoderClassLoader classDecoderClassLoader = new ClassDecoderClassLoader();
         classDecoder = classDecoderClassLoader.getClassDecoderInstance();
 
-        URI extDirUri = null;
+        URI encryptedClassesDirUri = null;
         FileSystem zipFs = null;
         try {
-            URL extDirUrl = Thread.currentThread().getContextClassLoader().getResource(EXT_DIR);
-            if (Objects.isNull(extDirUrl)) {
+            URL encryptedClassesDirUrl = Thread.currentThread().getContextClassLoader().getResource(ENCRYPTED_CLASSES_DIR);
+            if (Objects.isNull(encryptedClassesDirUrl)) {
                 return;
             }
 
-            extDirUri = extDirUrl.toURI();
-            String scheme = extDirUri.getScheme();
+            encryptedClassesDirUri = encryptedClassesDirUrl.toURI();
+            String scheme = encryptedClassesDirUri.getScheme();
             if (!scheme.equalsIgnoreCase("file")) {
                 //非file schema, 则需要手动加载其file system, 否则解析不出path, 然后就无法遍历目录了
                 //比如jar, 想读取其他jar内的内容, 也不能通过new File读取
                 Map<String, String> env = new HashMap<>();
                 env.put("create", "true");
-                zipFs = FileSystems.newFileSystem(extDirUri, env);
+                zipFs = FileSystems.newFileSystem(encryptedClassesDirUri, env);
             }
 
-            List<Path> extPaths = Files.list(Paths.get(extDirUri)).collect(Collectors.toList());
-            for (Path extPath : extPaths) {
-                if (!extPath.endsWith(".class")) {
+            List<Path> encryptedClassPaths = Files.list(Paths.get(encryptedClassesDirUri)).collect(Collectors.toList());
+            for (Path encryptedClassPath : encryptedClassPaths) {
+                if (!encryptedClassPath.endsWith(".class")) {
                     continue;
                 }
 
-                byte[] extClassBytes = Files.readAllBytes(extPath);
-                String extClassName = extPath.getFileName().toString();
-                extClassName = extClassName.substring(0, extClassName.lastIndexOf("."));
-                byte[] realExtClassBytes;
+                byte[] encryptedClassBytes = Files.readAllBytes(encryptedClassPath);
+                String encryptedClassName = encryptedClassPath.getFileName().toString();
+                encryptedClassName = encryptedClassName.substring(0, encryptedClassName.lastIndexOf("."));
+                byte[] realClassBytes;
                 try {
-                    realExtClassBytes = classDecoder.decode(extClassBytes);
+                    realClassBytes = classDecoder.decode(encryptedClassBytes);
                 } catch (Exception e) {
-                    throw new IllegalStateException(String.format("ClassDecoder decode class '%s' error, class path = '%s'", extClassName, extPath), e);
+                    throw new IllegalStateException(String.format("ClassDecoder decode class '%s' error, class path = '%s'", encryptedClassName, encryptedClassPath), e);
                 }
 
-                EXT_CLASS_BUFFER_MAP.put(extClassName, realExtClassBytes);
+                REAL_CLASS_BYTES_MAP.put(encryptedClassName, realClassBytes);
             }
         } catch (Exception e) {
             throw new IllegalStateException(e);
         } finally {
             if (Objects.nonNull(zipFs)) {
-                Environment.removeFromZipProvider(extDirUri, zipFs);
+                Environment.removeFromZipProvider(encryptedClassesDirUri, zipFs);
             }
         }
     }
@@ -95,6 +93,7 @@ public final class Environment {
      * 因为需要扫描整个classpath的所有resources, 并且解析后, 这些数据是可以丢弃的,
      * 如果可以释放, 可以减少内存占用. 但是ZipFileSystemProvider并没有把相关方法开放出来(并不想开发者调用??),
      * 故使用反射从其FileSystem缓存中移除
+     * java1.8合法调用, java17则会报错
      */
     @SuppressWarnings("JavaReflectionInvocation")
     public static void removeFromZipProvider(URI uri, FileSystem fileSystem) {
@@ -122,8 +121,8 @@ public final class Environment {
         }
     }
 
-    public static byte[] getExtClassBytes(String className) {
-        return EXT_CLASS_BUFFER_MAP.get(className);
+    public static byte[] getRealClassBytes(String className) {
+        return REAL_CLASS_BYTES_MAP.get(className);
     }
 
     public static ClassDecoder getClassDecoder() {
