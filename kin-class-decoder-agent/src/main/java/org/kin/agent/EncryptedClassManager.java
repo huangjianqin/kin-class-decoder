@@ -20,8 +20,8 @@ import java.util.stream.Collectors;
  * @author huangjianqin
  * @date 2022/2/19
  */
-public final class Environment {
-    private Environment() {
+public final class EncryptedClassManager {
+    private EncryptedClassManager() {
     }
 
     /** 加密后的ClassDecoder class文件存在目录 */
@@ -30,7 +30,7 @@ public final class Environment {
      * 其他需要解密的class文件,
      * 比如java app需要使用spring, 但java app业务类加密了, 而spring加载class是spring框架实现的(ClassReader),
      * 所以, 需要重新实现ClassReader, 那么就需要将重写的ClassReader class文件放到该目录, 用于替换掉原来的实现.
-     * 重写的逻辑注释要加载class文件内容那块, 可以调用Environment.getClassDecoder().decode(classfileBuffer)来解密
+     * 重写的逻辑是改动加载class文件内容那块, 可以调用{@link #getClassDecoder()}的{@link ClassDecoder#decode(byte[])}来解密
      * 注意, 这里面的内容也是使用{@link ClassDecoder}实现类来解密的, 而不是{@link ClassDecoderDecoder}
      */
     public static final String ENCRYPTED_CLASSES_DIR = "META-INF/encryptedClasses/";
@@ -84,7 +84,7 @@ public final class Environment {
             throw new IllegalStateException(e);
         } finally {
             if (Objects.nonNull(zipFs)) {
-                Environment.removeFromZipProvider(encryptedClassesDirUri, zipFs);
+                EncryptedClassManager.removeFromZipProvider(encryptedClassesDirUri, zipFs);
             }
         }
     }

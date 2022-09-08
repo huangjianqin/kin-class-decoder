@@ -65,12 +65,12 @@ public final class ClassDecoderTransformer implements ClassFileTransformer {
         }
 
         //如果agent jar包中存在该类解密后的class文件内容, 则返回
-        byte[] classBytes = Environment.getRealClassBytes(standardClassName);
+        byte[] classBytes = EncryptedClassManager.getRealClassBytes(standardClassName);
         if (Objects.isNull(classBytes)) {
             //agent jar包中没有该类解密后的class文件内容
             try {
                 //解密
-                classBytes = Environment.getClassDecoder().decode(classfileBuffer);
+                classBytes = EncryptedClassManager.getClassDecoder().decode(classfileBuffer);
             } catch (Exception e) {
                 throw new IllegalStateException(String.format("ClassDecoder decode class '%s' error", className), e);
             }

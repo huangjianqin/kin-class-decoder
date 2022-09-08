@@ -37,7 +37,7 @@ public final class ClassDecoderClassLoader extends ClassLoader {
         byte[] decoderClassBytes;
         try {
             //读取ClassDecoder class文件目录resource
-            URL decoderDirUrl = Thread.currentThread().getContextClassLoader().getResource(Environment.DECODER_DIR);
+            URL decoderDirUrl = Thread.currentThread().getContextClassLoader().getResource(EncryptedClassManager.DECODER_DIR);
             if (Objects.isNull(decoderDirUrl)) {
                 throw new IllegalStateException("can not find decoder dir resource");
             }
@@ -62,7 +62,7 @@ public final class ClassDecoderClassLoader extends ClassLoader {
             }
             if (decoderDirPaths.size() > 1) {
                 //多于1个文件
-                throw new IllegalStateException(String.format("'%s' have more than one class file", Environment.DECODER_DIR));
+                throw new IllegalStateException(String.format("'%s' have more than one class file", EncryptedClassManager.DECODER_DIR));
             }
             //取第一个
             Path decoderClassPath = decoderDirPaths.get(0);
@@ -78,7 +78,7 @@ public final class ClassDecoderClassLoader extends ClassLoader {
         } finally {
             //释放zip file system扫描目录后缓存的数据
             if (Objects.nonNull(zipFs)) {
-                Environment.removeFromZipProvider(decoderDirUri, zipFs);
+                EncryptedClassManager.removeFromZipProvider(decoderDirUri, zipFs);
             }
         }
 

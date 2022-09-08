@@ -1,8 +1,6 @@
 package org.kin.agent;
 
 import java.lang.instrument.Instrumentation;
-import java.lang.reflect.InvocationTargetException;
-import java.lang.reflect.Method;
 
 /**
  * premain agent
@@ -14,7 +12,7 @@ public class ClassDecoderAgent {
     private static Instrumentation instrumentation;
 
     public static void premain(String agentArgs, Instrumentation inst) {
-        Environment.init();
+        EncryptedClassManager.init();
         instrumentation = inst;
         //添加解密transformer
         instrumentation.addTransformer(ClassDecoderTransformer.instance());
